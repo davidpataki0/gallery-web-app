@@ -1,400 +1,790 @@
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fényképalbum</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
-  <style>
-    body { padding-top: 2rem; }
-    .photo-card { margin-bottom: 1.5rem; }
-    .photo-card img { width: 100%; height: 200px; object-fit: cover; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fotóalbum</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .photo-card {
+            transition: transform 0.3s;
+            cursor: pointer;
+            height: 250px;
+            overflow: hidden;
+        }
+        .photo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .photo-card img {
+            height: 180px;
+            object-fit: cover;
+        }
+        .navbar {
+            background-color: #3f51b5;
+        }
+        .btn-primary {
+            background-color: #3f51b5;
+            border-color: #3f51b5;
+        }
+        .btn-primary:hover {
+            background-color: #303f9f;
+            border-color: #303f9f;
+        }
+        .photo-detail-img {
+            max-height: 500px;
+            object-fit: contain;
+        }
+        .auth-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .photo-menu-item {
+            cursor: pointer;
+        }
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <header class="mb-4">
-      <h1>Fényképalbum</h1>
-      <div id="auth-buttons">
-        <button id="login-btn" class="btn btn-primary">Bejelentkezés</button>
-        <button id="register-btn" class="btn btn-secondary">Regisztráció</button>
-        <button id="logout-btn" class="btn btn-danger d-none">Kijelentkezés</button>
-      </div>
-    </header>
-
-    <div id="login-form" class="d-none">
-      <h2>Bejelentkezés</h2>
-      <form id="login">
-        <div class="mb-3">
-          <label for="login-email" class="form-label">Email</label>
-          <input type="email" class="form-control" id="login-email" required>
-        </div>
-        <div class="mb-3">
-          <label for="login-password" class="form-label">Jelszó</label>
-          <input type="password" class="form-control" id="login-password" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Bejelentkezés</button>
-      </form>
-    </div>
-
-    <div id="register-form" class="d-none">
-      <h2>Regisztráció</h2>
-      <form id="register">
-        <div class="mb-3">
-          <label for="register-name" class="form-label">Név</label>
-          <input type="text" class="form-control" id="register-name" required>
-        </div>
-        <div class="mb-3">
-          <label for="register-email" class="form-label">Email</label>
-          <input type="email" class="form-control" id="register-email" required>
-        </div>
-        <div class="mb-3">
-          <label for="register-password" class="form-label">Jelszó</label>
-          <input type="password" class="form-control" id="register-password" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Regisztráció</button>
-      </form>
-    </div>
-
-    <div id="upload-form" class="d-none">
-      <h2>Fénykép feltöltése</h2>
-      <form id="upload" enctype="multipart/form-data">
-        <div class="mb-3">
-          <label for="photo-name" class="form-label">Név</label>
-          <input type="text" class="form-control" id="photo-name" maxlength="40" required>
-        </div>
-        <div class="mb-3">
-          <label for="photo-file" class="form-label">Fájl</label>
-          <input type="file" class="form-control" id="photo-file" accept="image/*" required>
-        </div>
-        <button type="submit" class="btn btn-success">Feltöltés</button>
-      </form>
-    </div>
-
-    <div class="mb-4">
-      <div class="btn-group" role="group">
-        <button id="sort-by-name" class="btn btn-outline-secondary">Rendezés név szerint</button>
-        <button id="sort-by-date" class="btn btn-outline-secondary">Rendezés dátum szerint</button>
-      </div>
-    </div>
-
-    <div id="photos-container" class="row">
-      <!-- Fényképek ide kerülnek -->
-    </div>
-
-    <div id="photo-modal" class="modal fade">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="photo-modal-name"></h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <img id="photo-modal-img" class="img-fluid" src="" alt="">
-            <p id="photo-modal-date" class="mt-2"></p>
-          </div>
-          <div class="modal-footer">
-            <button id="delete-photo-btn" class="btn btn-danger d-none">Törlés</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bezárás</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    // DOM elemek
-    const authButtons = document.getElementById('auth-buttons');
-    const loginBtn = document.getElementById('login-btn');
-    const registerBtn = document.getElementById('register-btn');
-    const logoutBtn = document.getElementById('logout-btn');
-    const loginForm = document.getElementById('login-form');
-    const registerForm = document.getElementById('register-form');
-    const uploadForm = document.getElementById('upload-form');
-    const photosContainer = document.getElementById('photos-container');
-    const sortByNameBtn = document.getElementById('sort-by-name');
-    const sortByDateBtn = document.getElementById('sort-by-date');
-    const photoModal = new bootstrap.Modal(document.getElementById('photo-modal'));
-    const photoModalName = document.getElementById('photo-modal-name');
-    const photoModalImg = document.getElementById('photo-modal-img');
-    const photoModalDate = document.getElementById('photo-modal-date');
-    const deletePhotoBtn = document.getElementById('delete-photo-btn');
-
-    // Állapotkezelő
-    let isAuthenticated = false;
-    let photos = [];
-    let currentPhotoId = null;
-    let sortBy = 'date'; // 'name' vagy 'date'
-
-    // Eseménykezelők
-    loginBtn.addEventListener('click', () => {
-      loginForm.classList.remove('d-none');
-      registerForm.classList.add('d-none');
-    });
-
-    registerBtn.addEventListener('click', () => {
-      registerForm.classList.remove('d-none');
-      loginForm.classList.add('d-none');
-    });
-
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('token');
-      isAuthenticated = false;
-      updateUI();
-    });
-
-    document.getElementById('login').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('login-email').value;
-      const password = document.getElementById('login-password').value;
-      
-      try {
-        const response = await fetch('/api/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ email, password })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          alert(data.msg || 'Bejelentkezési hiba');
-          return;
-        }
-        
-        localStorage.setItem('token', data.token);
-        isAuthenticated = true;
-        updateUI();
-        loginForm.classList.add('d-none');
-      } catch (err) {
-        console.error('Bejelentkezési hiba:', err);
-        alert('Bejelentkezési hiba történt');
-      }
-    });
-
-    document.getElementById('register').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = document.getElementById('register-name').value;
-      const email = document.getElementById('register-email').value;
-      const password = document.getElementById('register-password').value;
-      
-      try {
-        const response = await fetch('/api/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ name, email, password })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          alert(data.msg || 'Regisztrációs hiba');
-          return;
-        }
-        
-        localStorage.setItem('token', data.token);
-        isAuthenticated = true;
-        updateUI();
-        registerForm.classList.add('d-none');
-      } catch (err) {
-        console.error('Regisztrációs hiba:', err);
-        alert('Regisztrációs hiba történt');
-      }
-    });
-
-    document.getElementById('upload').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = document.getElementById('photo-name').value;
-      const file = document.getElementById('photo-file').files[0];
-      
-      if (!file) {
-        alert('Válasszon ki egy fájlt');
-        return;
-      }
-      
-      const formData = new FormData();
-      formData.append('name', name);
-      formData.append('image', file);
-      
-      try {
-        const response = await fetch('/api/photos', {
-          method: 'POST',
-          headers: {
-            'x-auth-token': localStorage.getItem('token')
-          },
-          body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          alert(data.msg || 'Feltöltési hiba');
-          return;
-        }
-        
-        photos.push(data);
-        renderPhotos();
-        document.getElementById('upload').reset();
-      } catch (err) {
-        console.error('Feltöltési hiba:', err);
-        alert('Feltöltési hiba történt');
-      }
-    });
-
-    sortByNameBtn.addEventListener('click', () => {
-      sortBy = 'name';
-      renderPhotos();
-    });
-
-    sortByDateBtn.addEventListener('click', () => {
-      sortBy = 'date';
-      renderPhotos();
-    });
-
-    deletePhotoBtn.addEventListener('click', async () => {
-      if (!currentPhotoId) return;
-      
-      try {
-        const response = await fetch(`/api/photos/${currentPhotoId}`, {
-          method: 'DELETE',
-          headers: {
-            'x-auth-token': localStorage.getItem('token')
-          }
-        });
-        
-        if (!response.ok) {
-          const data = await response.json();
-          alert(data.msg || 'Törlési hiba');
-          return;
-        }
-        
-        photos = photos.filter(photo => photo._id !== currentPhotoId);
-        photoModal.hide();
-        renderPhotos();
-      } catch (err) {
-        console.error('Törlési hiba:', err);
-        alert('Törlési hiba történt');
-      }
-    });
-
-    // Segédfüggvények
-    function updateUI() {
-      if (isAuthenticated) {
-        loginBtn.classList.add('d-none');
-        registerBtn.classList.add('d-none');
-        logoutBtn.classList.remove('d-none');
-        uploadForm.classList.remove('d-none');
-        deletePhotoBtn.classList.remove('d-none');
-      } else {
-        loginBtn.classList.remove('d-none');
-        registerBtn.classList.remove('d-none');
-        logoutBtn.classList.add('d-none');
-        uploadForm.classList.add('d-none');
-        deletePhotoBtn.classList.add('d-none');
-      }
-      
-      getPhotos();
-    }
-
-    async function getPhotos() {
-      try {
-        const response = await fetch('/api/photos');
-        photos = await response.json();
-        renderPhotos();
-      } catch (err) {
-        console.error('Fényképek lekérési hiba:', err);
-      }
-    }
-
-    function renderPhotos() {
-      // Rendezés
-      if (sortBy === 'name') {
-        photos.sort((a, b) => a.name.localeCompare(b.name));
-      } else {
-        photos.sort((a, b) => new Date(b.date) - new Date(a.date));
-      }
-      
-      // Megjelenítés
-      photosContainer.innerHTML = '';
-      
-      photos.forEach(photo => {
-        const date = new Date(photo.date).toLocaleString('hu-HU', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-        
-        const col = document.createElement('div');
-        col.className = 'col-md-4';
-        col.innerHTML = `
-          <div class="card photo-card">
-            <img src="${photo.imageUrl}" class="card-img-top" alt="${photo.name}">
-            <div class="card-body">
-              <h5 class="card-title">${photo.name}</h5>
-              <p class="card-text">${date}</p>
-              <button class="btn btn-primary view-photo" data-id="${photo._id}">Megtekintés</button>
+    <!-- Navigációs sáv -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-camera-retro me-2"></i>Fotóalbum
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" id="home-link">Kezdőlap</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav" id="auth-nav">
+                    <!-- Bejelentkezés előtt -->
+                    <li class="nav-item" id="login-nav-item">
+                        <a class="nav-link" href="#" id="login-link">Bejelentkezés</a>
+                    </li>
+                    <li class="nav-item" id="register-nav-item">
+                        <a class="nav-link" href="#" id="register-link">Regisztráció</a>
+                    </li>
+                    
+                    <!-- Bejelentkezés után -->
+                    <li class="nav-item dropdown d-none" id="user-dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="username-display" 
+                           role="button" data-bs-toggle="dropdown">
+                            Felhasználó
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" id="upload-link">
+                                <i class="fas fa-upload me-2"></i>Új fotó feltöltése
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="logout-link">
+                                <i class="fas fa-sign-out-alt me-2"></i>Kijelentkezés
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
             </div>
-          </div>
-        `;
+        </div>
+    </nav>
+
+    <!-- Fő konténer -->
+    <div class="container mt-4">
+        <!-- Kezdőlap - Fotó lista -->
+        <div id="home-page">
+            <!-- Rendezési opciók -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Fotók</h2>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
+                            data-bs-toggle="dropdown">
+                        <i class="fas fa-sort me-1"></i>Rendezés
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item photo-menu-item" href="#" data-sort="name" data-order="asc">
+                            <i class="fas fa-sort-alpha-down me-2"></i>Név szerint (A-Z)
+                        </a></li>
+                        <li><a class="dropdown-item photo-menu-item" href="#" data-sort="name" data-order="desc">
+                            <i class="fas fa-sort-alpha-up me-2"></i>Név szerint (Z-A)
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item photo-menu-item" href="#" data-sort="uploadDate" data-order="desc">
+                            <i class="fas fa-sort-numeric-down me-2"></i>Legújabb elöl
+                        </a></li>
+                        <li><a class="dropdown-item photo-menu-item" href="#" data-sort="uploadDate" data-order="asc">
+                            <i class="fas fa-sort-numeric-up me-2"></i>Legrégebbi elöl
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Betöltés indikátor -->
+            <div class="loading-spinner" id="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Betöltés...</span>
+                </div>
+                <p class="mt-2">Fotók betöltése...</p>
+            </div>
+
+            <!-- Fotók konténere -->
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="photos-container">
+                <!-- Itt jelennek meg a fotók -->
+            </div>
+
+            <!-- Nincs fotó üzenet -->
+            <div class="text-center py-5 d-none" id="no-photos-message">
+                <i class="fas fa-images fa-3x mb-3 text-muted"></i>
+                <h4 class="text-muted">Nincs megjeleníthető fotó</h4>
+                <p class="text-muted">Töltsd fel az első fotódat, miután bejelentkeztél!</p>
+            </div>
+        </div>
+
+        <!-- Részletes fotó nézet -->
+        <div id="photo-detail-page" class="d-none">
+            <div class="mb-3">
+                <button class="btn btn-outline-secondary" id="back-to-list">
+                    <i class="fas fa-arrow-left me-2"></i>Vissza a listához
+                </button>
+            </div>
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 id="photo-detail-name" class="m-0"></h3>
+                    <button class="btn btn-danger d-none" id="delete-photo-btn">
+                        <i class="fas fa-trash-alt me-1"></i>Törlés
+                    </button>
+                </div>
+                <div class="card-body text-center">
+                    <img src="" alt="Fotó" class="img-fluid photo-detail-img" id="photo-detail-img">
+                </div>
+                <div class="card-footer text-muted">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <i class="fas fa-calendar-alt me-2"></i>Feltöltve: 
+                            <span id="photo-detail-date"></span>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <i class="fas fa-user me-2"></i>Feltöltő: 
+                            <span id="photo-detail-user"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bejelentkezés -->
+        <div id="login-page" class="auth-container d-none">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="m-0"><i class="fas fa-sign-in-alt me-2"></i>Bejelentkezés</h3>
+                </div>
+                <div class="card-body">
+                    <form id="login-form">
+                        <div class="alert alert-danger d-none" id="login-error"></div>
+                        <div class="mb-3">
+                            <label for="login-email" class="form-label">Email cím</label>
+                            <input type="email" class="form-control" id="login-email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="login-password" class="form-label">Jelszó</label>
+                            <input type="password" class="form-control" id="login-password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Bejelentkezés</button>
+                    </form>
+                </div>
+                <div class="card-footer text-center">
+                    <p class="mb-0">Nincs még fiókod? <a href="#" id="to-register-link">Regisztrálj most</a></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Regisztráció -->
+        <div id="register-page" class="auth-container d-none">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="m-0"><i class="fas fa-user-plus me-2"></i>Regisztráció</h3>
+                </div>
+                <div class="card-body">
+                    <form id="register-form">
+                        <div class="alert alert-danger d-none" id="register-error"></div>
+                        <div class="mb-3">
+                            <label for="register-username" class="form-label">Felhasználónév</label>
+                            <input type="text" class="form-control" id="register-username" 
+                                   minlength="3" maxlength="20" required>
+                            <div class="form-text">3-20 karakter hosszú lehet</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="register-email" class="form-label">Email cím</label>
+                            <input type="email" class="form-control" id="register-email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="register-password" class="form-label">Jelszó</label>
+                            <input type="password" class="form-control" id="register-password" 
+                                   minlength="6" required>
+                            <div class="form-text">Legalább 6 karakter hosszú legyen</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="register-password-confirm" class="form-label">Jelszó megerősítése</label>
+                            <input type="password" class="form-control" id="register-password-confirm" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Regisztráció</button>
+                    </form>
+                </div>
+                <div class="card-footer text-center">
+                    <p class="mb-0">Már van fiókod? <a href="#" id="to-login-link">Jelentkezz be</a></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fotó feltöltés -->
+        <div id="upload-page" class="d-none">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="m-0"><i class="fas fa-upload me-2"></i>Új fotó feltöltése</h3>
+                </div>
+                <div class="card-body">
+                    <form id="upload-form">
+                        <div class="alert alert-danger d-none" id="upload-error"></div>
+                        <div class="mb-3">
+                            <label for="photo-name" class="form-label">Fotó neve</label>
+                            <input type="text" class="form-control" id="photo-name" 
+                                   maxlength="40" required>
+                            <div class="form-text">Maximum 40 karakter</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="photo-file" class="form-label">Fájl kiválasztása</label>
+                            <input type="file" class="form-control" id="photo-file" 
+                                   accept="image/*" required>
+                            <div class="form-text">Csak képfájlok (max. 5MB)</div>
+                        </div>
+                        <div class="mb-3 d-none" id="preview-container">
+                            <label class="form-label">Előnézet:</label>
+                            <div class="text-center">
+                                <img id="image-preview" class="img-fluid img-thumbnail" 
+                                     style="max-height: 300px" alt="Előnézet">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary" id="cancel-upload">
+                                <i class="fas fa-times me-2"></i>Mégsem
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-cloud-upload-alt me-2"></i>Feltöltés
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Törlésmegerősítő modal -->
+    <div class="modal fade" id="delete-confirm-modal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Fotó törlése
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Bezárás"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Biztosan törlöd a következő fotót: <strong id="delete-photo-name"></strong>?</p>
+                    <p>Ez a művelet nem visszavonható!</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Mégsem</button>
+                    <button type="button" class="btn btn-danger" id="confirm-delete-btn">
+                        <i class="fas fa-trash-alt me-2"></i>Törlés
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // API alapURL
+        const API_URL = '/api';
         
-        photosContainer.appendChild(col);
-      });
-      
-      // Eseménykezelők hozzáadása a gombokhoz
-      document.querySelectorAll('.view-photo').forEach(button => {
-        button.addEventListener('click', () => {
-          const photoId = button.dataset.id;
-          const photo = photos.find(p => p._id === photoId);
-          
-          if (photo) {
-            currentPhotoId = photoId;
-            photoModalName.textContent = photo.name;
-            photoModalImg.src = photo.imageUrl;
-            photoModalDate.textContent = `Feltöltve: ${new Date(photo.date).toLocaleString('hu-HU')}`;
-            photoModal.show();
-          }
-        });
-      });
-    }
+        // DOM elemek
+        const pages = ['home-page', 'login-page', 'register-page', 'upload-page', 'photo-detail-page'];
+        const loginNavItem = document.getElementById('login-nav-item');
+        const registerNavItem = document.getElementById('register-nav-item');
+        const userDropdown = document.getElementById('user-dropdown');
+        const usernameDisplay = document.getElementById('username-display');
+        const photosContainer = document.getElementById('photos-container');
+        const noPhotosMessage = document.getElementById('no-photos-message');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const deletePhotoBtn = document.getElementById('delete-photo-btn');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const uploadForm = document.getElementById('upload-form');
+        const deleteModal = new bootstrap.Modal(document.getElementById('delete-confirm-modal'));
 
-    // Alkalmazás inicializálása
-    function init() {
-      // Token ellenőrzése
-      const token = localStorage.getItem('token');
-      
-      if (token) {
-        fetch('/api/login', {
-          headers: {
-            'x-auth-token': token
-          }
-        })
-        .then(response => {
-          if (response.ok) {
-            isAuthenticated = true;
-          } else {
+        // Aktuális fotó ID és rendezési beállítások
+        let currentPhotoId = null;
+        let currentSort = 'uploadDate';
+        let currentOrder = 'desc';
+        
+        // Oldal váltás
+        function showPage(pageId) {
+            pages.forEach(page => {
+                document.getElementById(page).classList.add('d-none');
+            });
+            document.getElementById(pageId).classList.remove('d-none');
+            
+            // Navigációs link aktiválása
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            if (pageId === 'home-page') {
+                document.getElementById('home-link').classList.add('active');
+            }
+        }
+        
+        // Felhasználói állapot ellenőrzése
+        function checkAuthState() {
+            const token = localStorage.getItem('token');
+            
+            if (token) {
+                // Bejelentkezett állapot
+                loginNavItem.classList.add('d-none');
+                registerNavItem.classList.add('d-none');
+                userDropdown.classList.remove('d-none');
+                
+                // Felhasználó adatainak lekérése
+                fetchUserData();
+            } else {
+                // Kijelentkezett állapot
+                loginNavItem.classList.remove('d-none');
+                registerNavItem.classList.remove('d-none');
+                userDropdown.classList.add('d-none');
+                usernameDisplay.textContent = 'Felhasználó';
+            }
+        }
+        
+        // Felhasználó adatainak lekérése
+        async function fetchUserData() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/user`, {
+                    headers: {
+                        'x-auth-token': token
+                    }
+                });
+                
+                if (response.ok) {
+                    const userData = await response.json();
+                    usernameDisplay.textContent = userData.username;
+                } else {
+                    // Token lejárt vagy érvénytelen
+                    localStorage.removeItem('token');
+                    checkAuthState();
+                }
+            } catch (error) {
+                console.error('Felhasználó lekérési hiba:', error);
+            }
+        }
+        
+        // Fotók lekérése
+        async function fetchPhotos() {
+            try {
+                loadingSpinner.style.display = 'block';
+                photosContainer.innerHTML = '';
+                
+                const response = await fetch(
+                    `${API_URL}/photos?sort=${currentSort}&order=${currentOrder}`
+                );
+                
+                const photos = await response.json();
+                
+                loadingSpinner.style.display = 'none';
+                
+                if (photos.length === 0) {
+                    noPhotosMessage.classList.remove('d-none');
+                } else {
+                    noPhotosMessage.classList.add('d-none');
+                    renderPhotoList(photos);
+                }
+            } catch (error) {
+                console.error('Fotók lekérési hiba:', error);
+                loadingSpinner.style.display = 'none';
+                noPhotosMessage.classList.remove('d-none');
+            }
+        }
+        
+        // Fotó lista megjelenítése
+        function renderPhotoList(photos) {
+            photosContainer.innerHTML = '';
+            
+            photos.forEach(photo => {
+                const uploadDate = new Date(photo.uploadDate);
+                const formattedDate = `${uploadDate.getFullYear()}-${String(uploadDate.getMonth() + 1).padStart(2, '0')}-${String(uploadDate.getDate()).padStart(2, '0')} ${String(uploadDate.getHours()).padStart(2, '0')}:${String(uploadDate.getMinutes()).padStart(2, '0')}`;
+                
+                const photoCard = document.createElement('div');
+                photoCard.className = 'col';
+                photoCard.innerHTML = `
+                    <div class="card photo-card h-100" data-id="${photo._id}">
+                        <img src="${photo.imageUrl}" class="card-img-top" alt="${photo.name}">
+                        <div class="card-body">
+                            <h5 class="card-title text-truncate">${photo.name}</h5>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar-alt me-1"></i>${formattedDate}
+                                </small>
+                            </p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <small class="text-muted">
+                                <i class="fas fa-user me-1"></i>${photo.user?.username || 'Ismeretlen'}
+                            </small>
+                        </div>
+                    </div>
+                `;
+                
+                // Fotó kártyára kattintás esemény
+                photoCard.querySelector('.photo-card').addEventListener('click', () => {
+                    showPhotoDetail(photo._id);
+                });
+                
+                photosContainer.appendChild(photoCard);
+            });
+        }
+        
+        // Részletes fotó nézet
+        async function showPhotoDetail(photoId) {
+            try {
+                const response = await fetch(`${API_URL}/photos/${photoId}`);
+                
+                if (!response.ok) {
+                    throw new Error('Fotó betöltési hiba');
+                }
+                
+                const photo = await response.json();
+                currentPhotoId = photo._id;
+                
+                // Adatok megjelenítése
+                document.getElementById('photo-detail-name').textContent = photo.name;
+                document.getElementById('photo-detail-img').src = photo.imageUrl;
+                
+                const uploadDate = new Date(photo.uploadDate);
+                const formattedDate = `${uploadDate.getFullYear()}-${String(uploadDate.getMonth() + 1).padStart(2, '0')}-${String(uploadDate.getDate()).padStart(2, '0')} ${String(uploadDate.getHours()).padStart(2, '0')}:${String(uploadDate.getMinutes()).padStart(2, '0')}`;
+                document.getElementById('photo-detail-date').textContent = formattedDate;
+                document.getElementById('photo-detail-user').textContent = photo.user?.username || 'Ismeretlen';
+                
+                // Törlés gomb megjelenítése csak a tulajdonosnak
+                const userId = getUserIdFromToken();
+                if (userId && photo.user && photo.user._id === userId) {
+                    deletePhotoBtn.classList.remove('d-none');
+                } else {
+                    deletePhotoBtn.classList.add('d-none');
+                }
+                
+                showPage('photo-detail-page');
+            } catch (error) {
+                console.error('Fotó részletek hiba:', error);
+                alert('A fotó nem tölthető be. Próbáld újra később.');
+                showPage('home-page');
+            }
+        }
+        
+        // Felhasználó ID lekérése a tokenből
+        function getUserIdFromToken() {
+            const token = localStorage.getItem('token');
+            if (!token) return null;
+            
+            try {
+                // JWT token dekódolása (csak a payload rész)
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                
+                return JSON.parse(jsonPayload).id;
+            } catch (error) {
+                console.error('Token dekódolási hiba:', error);
+                return null;
+            }
+        }
+        
+        // Kép feltöltés előnézet
+        document.getElementById('photo-file').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('image-preview').src = e.target.result;
+                    document.getElementById('preview-container').classList.remove('d-none');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                document.getElementById('preview-container').classList.add('d-none');
+            }
+        });
+        
+        // ---- Eseménykezelők ----
+        
+        // Navigáció
+        document.getElementById('home-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            showPage('home-page');
+            fetchPhotos();
+        });
+        
+        document.getElementById('login-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            showPage('login-page');
+        });
+        
+        document.getElementById('register-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            showPage('register-page');
+        });
+        
+        document.getElementById('to-register-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            showPage('register-page');
+        });
+        
+        document.getElementById('to-login-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            showPage('login-page');
+        });
+        
+        document.getElementById('upload-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            showPage('upload-page');
+        });
+        
+        document.getElementById('cancel-upload').addEventListener('click', () => {
+            showPage('home-page');
+        });
+        
+        document.getElementById('back-to-list').addEventListener('click', () => {
+            showPage('home-page');
+        });
+        
+        document.getElementById('logout-link').addEventListener('click', (e) => {
+            e.preventDefault();
             localStorage.removeItem('token');
-          }
-          updateUI();
-        })
-        .catch(err => {
-          console.error('Hitelesítési hiba:', err);
-          localStorage.removeItem('token');
-          updateUI();
+            checkAuthState();
+            showPage('home-page');
+            fetchPhotos();
         });
-      } else {
-        updateUI();
-      }
-    }
-
-    // Alkalmazás indítása
-    init();
-  </script>
+        
+        // Rendezési események
+        document.querySelectorAll('.photo-menu-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                currentSort = e.target.dataset.sort;
+                currentOrder = e.target.dataset.order;
+                fetchPhotos();
+            });
+        });
+        
+        // Fotó törlés
+        document.getElementById('delete-photo-btn').addEventListener('click', () => {
+            document.getElementById('delete-photo-name').textContent = 
+                document.getElementById('photo-detail-name').textContent;
+            deleteModal.show();
+        });
+        
+        document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
+            if (!currentPhotoId) return;
+            
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('A törléshez be kell jelentkezned!');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/photos/${currentPhotoId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'x-auth-token': token
+                    }
+                });
+                
+                if (response.ok) {
+                    deleteModal.hide();
+                    showPage('home-page');
+                    fetchPhotos();
+                } else {
+                    const error = await response.json();
+                    alert('Hiba történt: ' + (error.message || 'Ismeretlen hiba'));
+                }
+            } catch (error) {
+                console.error('Törlési hiba:', error);
+                alert('Hiba történt a törlés során. Próbáld újra később.');
+            }
+        });
+        
+        // Bejelentkezés űrlap
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const errorElement = document.getElementById('login-error');
+            
+            errorElement.classList.add('d-none');
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    checkAuthState();
+                    showPage('home-page');
+                    fetchPhotos();
+                    loginForm.reset();
+                } else {
+                    errorElement.textContent = data.message || 'Hibás bejelentkezés';
+                    errorElement.classList.remove('d-none');
+                }
+            } catch (error) {
+                console.error('Bejelentkezési hiba:', error);
+                errorElement.textContent = 'Hiba történt a bejelentkezés során. Próbáld újra később.';
+                errorElement.classList.remove('d-none');
+            }
+        });
+        
+        // Regisztráció űrlap
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('register-username').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const passwordConfirm = document.getElementById('register-password-confirm').value;
+            const errorElement = document.getElementById('register-error');
+            
+            // Jelszavak egyezésének ellenőrzése
+            if (password !== passwordConfirm) {
+                errorElement.textContent = 'A jelszavak nem egyeznek';
+                errorElement.classList.remove('d-none');
+                return;
+            }
+            
+            errorElement.classList.add('d-none');
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    checkAuthState();
+                    showPage('home-page');
+                    fetchPhotos();
+                    registerForm.reset();
+                } else {
+                    errorElement.textContent = data.message || 'Regisztrációs hiba';
+                    errorElement.classList.remove('d-none');
+                }
+            } catch (error) {
+                console.error('Regisztrációs hiba:', error);
+                errorElement.textContent = 'Hiba történt a regisztráció során. Próbáld újra később.';
+                errorElement.classList.remove('d-none');
+            }
+        });
+        
+        // Feltöltés űrlap
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('photo-name').value;
+            const fileInput = document.getElementById('photo-file');
+            const errorElement = document.getElementById('upload-error');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                errorElement.textContent = 'Válassz ki egy képfájlt feltöltéshez';
+                errorElement.classList.remove('d-none');
+                return;
+            }
+            
+            const token = localStorage.getItem('token');
+            if (!token) {
+                errorElement.textContent = 'A feltöltéshez be kell jelentkezned';
+                errorElement.classList.remove('d-none');
+                return;
+            }
+            
+            errorElement.classList.add('d-none');
+            
+            try {
+                // Űrlap adatok összeállítása
+                const formData = new FormData();
+                formData.append('name', name);
+                formData.append('image', fileInput.files[0]);
+                
+                // Kép feltöltése
+                const response = await fetch(`${API_URL}/photos`, {
+                    method: 'POST',
+                    headers: {
+                        'x-auth-token': token
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    uploadForm.reset();
+                    document.getElementById('preview-container').classList.add('d-none');
+                    showPage('home-page');
+                    fetchPhotos();
+                } else {
+                    errorElement.textContent = data.message || 'Feltöltési hiba';
+                    errorElement.classList.remove('d-none');
+                }
+            } catch (error) {
+                console.error('Feltöltési hiba:', error);
+                errorElement.textContent = 'Hiba történt a feltöltés során. Próbáld újra később.';
+                errorElement.classList.remove('d-none');
+            }
+        });
+        
+        // Alkalmazás indítása
+        window.addEventListener('load', () => {
+            checkAuthState();
+            showPage('home-page');
+            fetchPhotos();
+        });
+    </script>
 </body>
 </html>
