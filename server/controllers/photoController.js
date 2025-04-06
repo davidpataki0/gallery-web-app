@@ -100,8 +100,9 @@ exports.deletePhoto = async (req, res) => {
     // Kép törlése Cloudinary-ról
     await cloudinary.uploader.destroy(photo.cloudinaryId);
     
-    // Fotó törlése az adatbázisból
-    await photo.remove();
+    // Fotó törlése az adatbázisból - itt van a javítás
+    await Photo.deleteOne({ _id: photo._id });
+    // Alternatív megoldás: await Photo.findByIdAndDelete(photo._id);
     
     res.json({ message: 'Fotó sikeresen törölve' });
   } catch (error) {
