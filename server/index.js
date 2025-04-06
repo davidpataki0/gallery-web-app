@@ -34,7 +34,6 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Port beállítása (Heroku-kompatibilis)
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
