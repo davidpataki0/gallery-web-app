@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fényképalbum</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+  <style>
+    body { padding-top: 2rem; }
+    .photo-card { margin-bottom: 1.5rem; }
+    .photo-card img { width: 100%; height: 200px; object-fit: cover; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="mb-4">
+      <h1>Fényképalbum</h1>
+      <div id="auth-buttons">
+        <button id="login-btn" class="btn btn-primary">Bejelentkezés</button>
+        <button id="register-btn" class="btn btn-secondary">Regisztráció</button>
+        <button id="logout-btn" class="btn btn-danger d-none">Kijelentkezés</button>
+      </div>
+    </header>
+
+    <div id="login-form" class="d-none">
+      <h2>Bejelentkezés</h2>
+      <form id="login">
+        <div class="mb-3">
+          <label for="login-email" class="form-label">Email</label>
+          <input type="email" class="form-control" id="login-email" required>
+        </div>
+        <div class="mb-3">
+          <label for="login-password" class="form-label">Jelszó</label>
+          <input type="password" class="form-control" id="login-password" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Bejelentkezés</button>
+      </form>
+    </div>
+
+    <div id="register-form" class="d-none">
+      <h2>Regisztráció</h2>
+      <form id="register">
+        <div class="mb-3">
+          <label for="register-name" class="form-label">Név</label>
+          <input type="text" class="form-control" id="register-name" required>
+        </div>
+        <div class="mb-3">
+          <label for="register-email" class="form-label">Email</label>
+          <input type="email" class="form-control" id="register-email" required>
+        </div>
+        <div class="mb-3">
+          <label for="register-password" class="form-label">Jelszó</label>
+          <input type="password" class="form-control" id="register-password" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Regisztráció</button>
+      </form>
+    </div>
+
+    <div id="upload-form" class="d-none">
+      <h2>Fénykép feltöltése</h2>
+      <form id="upload" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label for="photo-name" class="form-label">Név</label>
+          <input type="text" class="form-control" id="photo-name" maxlength="40" required>
+        </div>
+        <div class="mb-3">
+          <label for="photo-file" class="form-label">Fájl</label>
+          <input type="file" class="form-control" id="photo-file" accept="image/*" required>
+        </div>
+        <button type="submit" class="btn btn-success">Feltöltés</button>
+      </form>
+    </div>
+
+    <div class="mb-4">
+      <div class="btn-group" role="group">
+        <button id="sort-by-name" class="btn btn-outline-secondary">Rendezés név szerint</button>
+        <button id="sort-by-date" class="btn btn-outline-secondary">Rendezés dátum szerint</button>
+      </div>
+    </div>
+
+    <div id="photos-container" class="row">
+      <!-- Fényképek ide kerülnek -->
+    </div>
+
+    <div id="photo-modal" class="modal fade">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="photo-modal-name"></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <img id="photo-modal-img" class="img-fluid" src="" alt="">
+            <p id="photo-modal-date" class="mt-2"></p>
+          </div>
+          <div class="modal-footer">
+            <button id="delete-photo-btn" class="btn btn-danger d-none">Törlés</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bezárás</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // DOM elemek
+    const authButtons = document.getElementById('auth-buttons');
+    const loginBtn = document.getElementById('login-btn');
+    const registerBtn = document.getElementById('register-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const uploadForm = document.getElementById('upload-form');
+    const photosContainer = document.getElementById('photos-container');
+    const sortByNameBtn = document.getElementById('sort-by-name');
+    const sortByDateBtn = document.getElementById('sort-by-date');
+    const photoModal = new bootstrap.Modal(document.getElementById('photo-modal'));
+    const photoModalName = document.getElementById('photo-modal-name');
+    const photoModalImg = document.getElementById('photo-modal-img');
+    const photoModalDate = document.getElementById('photo-modal-date');
+    const deletePhotoBtn = document.getElementById('delete-photo-btn');
+
+    // Állapotkezelő
+    let isAuthenticated = false;
+    let photos = [];
+    let currentPhotoId = null;
+    let sortBy = 'date'; // 'name' vagy 'date'
+
+    // Eseménykezelők
+    loginBtn.addEventListener('click', () => {
+      loginForm.classList.remove('d-none');
+      registerForm.classList.add('d-none');
+    });
+
+    registerBtn.addEventListener('click', () => {
+      registerForm.classList.remove('d-none');
+      loginForm.classList.add('d-none');
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('token');
+      isAuthenticated = false;
+      updateUI();
+    });
+
+    document.getElementById('login').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      
+      try {
+        const response = await fetch('/api/auth', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          alert(data.msg || 'Bejelentkezési hiba');
+          return;
+        }
+        
+        localStorage.setItem('token', data.token);
+        isAuthenticated = true;
+        updateUI();
+        loginForm.classList.add('d-none');
+      } catch (err) {
+        console.error('Bejelentkezési hiba:', err);
+        alert('Bejelentkezési hiba történt');
+      }
+    });
+
+    document.getElementById('register').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('register-name').value;
+      const email = document.getElementById('register-email').value;
+      const password = document.getElementById('register-password').value;
+      
+      try {
+        const response = await fetch('/api/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name, email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          alert(data.msg || 'Regisztrációs hiba');
+          return;
+        }
+        
+        localStorage.setItem('token', data.token);
+        isAuthenticated = true;
+        updateUI();
+        registerForm.classList.add('d-none');
+      } catch (err) {
+        console.error('Regisztrációs hiba:', err);
+        alert('Regisztrációs hiba történt');
+      }
+    });
+
+    document.getElementById('upload').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('photo-name').value;
+      const file = document.getElementById('photo-file').files[0];
+      
+      if (!file) {
+        alert('Válasszon ki egy fájlt');
+        return;
+      }
+      
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('image', file);
+      
+      try {
+        const response = await fetch('/api/photos', {
+          method: 'POST',
+          headers: {
+            'x-auth-token': localStorage.getItem('token')
+          },
+          body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          alert(data.msg || 'Feltöltési hiba');
+          return;
+        }
+        
+        photos.push(data);
+        renderPhotos();
+        document.getElementById('upload').reset();
+      } catch (err) {
+        console.error('Feltöltési hiba:', err);
+        alert('Feltöltési hiba történt');
+      }
+    });
+
+    sortByNameBtn.addEventListener('click', () => {
+      sortBy = 'name';
+      renderPhotos();
+    });
+
+    sortByDateBtn.addEventListener('click', () => {
+      sortBy = 'date';
+      renderPhotos();
+    });
+
+    deletePhotoBtn.addEventListener('click', async () => {
+      if (!currentPhotoId) return;
+      
+      try {
+        const response = await fetch(`/api/photos/${currentPhotoId}`, {
+          method: 'DELETE',
+          headers: {
+            'x-auth-token': localStorage.getItem('token')
+          }
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          alert(data.msg || 'Törlési hiba');
+          return;
+        }
+        
+        photos = photos.filter(photo => photo._id !== currentPhotoId);
+        photoModal.hide();
+        renderPhotos();
+      } catch (err) {
+        console.error('Törlési hiba:', err);
+        alert('Törlési hiba történt');
+      }
+    });
+
+    // Segédfüggvények
+    function updateUI() {
+      if (isAuthenticated) {
+        loginBtn.classList.add('d-none');
+        registerBtn.classList.add('d-none');
+        logoutBtn.classList.remove('d-none');
+        uploadForm.classList.remove('d-none');
+        deletePhotoBtn.classList.remove('d-none');
+      } else {
+        loginBtn.classList.remove('d-none');
+        registerBtn.classList.remove('d-none');
+        logoutBtn.classList.add('d-none');
+        uploadForm.classList.add('d-none');
+        deletePhotoBtn.classList.add('d-none');
+      }
+      
+      getPhotos();
+    }
+
+    async function getPhotos() {
+      try {
+        const response = await fetch('/api/photos');
+        photos = await response.json();
+        renderPhotos();
+      } catch (err) {
+        console.error('Fényképek lekérési hiba:', err);
+      }
+    }
+
+    function renderPhotos() {
+      // Rendezés
+      if (sortBy === 'name') {
+        photos.sort((a, b) => a.name.localeCompare(b.name));
+      } else {
+        photos.sort((a, b) => new Date(b.date) - new Date(a.date));
+      }
+      
+      // Megjelenítés
+      photosContainer.innerHTML = '';
+      
+      photos.forEach(photo => {
+        const date = new Date(photo.date).toLocaleString('hu-HU', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        const col = document.createElement('div');
+        col.className = 'col-md-4';
+        col.innerHTML = `
+          <div class="card photo-card">
+            <img src="${photo.imageUrl}" class="card-img-top" alt="${photo.name}">
+            <div class="card-body">
+              <h5 class="card-title">${photo.name}</h5>
+              <p class="card-text">${date}</p>
+              <button class="btn btn-primary view-photo" data-id="${photo._id}">Megtekintés</button>
+            </div>
+          </div>
+        `;
+        
+        photosContainer.appendChild(col);
+      });
+      
+      // Eseménykezelők hozzáadása a gombokhoz
+      document.querySelectorAll('.view-photo').forEach(button => {
+        button.addEventListener('click', () => {
+          const photoId = button.dataset.id;
+          const photo = photos.find(p => p._id === photoId);
+          
+          if (photo) {
+            currentPhotoId = photoId;
+            photoModalName.textContent = photo.name;
+            photoModalImg.src = photo.imageUrl;
+            photoModalDate.textContent = `Feltöltve: ${new Date(photo.date).toLocaleString('hu-HU')}`;
+            photoModal.show();
+          }
+        });
+      });
+    }
+
+    // Alkalmazás inicializálása
+    function init() {
+      // Token ellenőrzése
+      const token = localStorage.getItem('token');
+      
+      if (token) {
+        fetch('/api/auth', {
+          headers: {
+            'x-auth-token': token
+          }
+        })
+        .then(response => {
+          if (response.ok) {
+            isAuthenticated = true;
+          } else {
+            localStorage.removeItem('token');
+          }
+          updateUI();
+        })
+        .catch(err => {
+          console.error('Hitelesítési hiba:', err);
+          localStorage.removeItem('token');
+          updateUI();
+        });
+      } else {
+        updateUI();
+      }
+    }
+
+    // Alkalmazás indítása
+    init();
+  </script>
+</body>
+</html>
