@@ -333,7 +333,8 @@
         const loginForm = document.getElementById('login-form');
         const registerForm = document.getElementById('register-form');
         const uploadForm = document.getElementById('upload-form');
-        const deleteModal = new bootstrap.Modal(document.getElementById('delete-confirm-modal'));
+        const deleteModalElement = document.getElementById('delete-confirm-modal');
+        let deleteModal = new bootstrap.Modal(deleteModalElement);
 
         // Aktuális fotó ID és rendezési beállítások
         let currentPhotoId = null;
@@ -625,7 +626,6 @@
                 });
                 
                 if (response.ok) {
-                    // Modal elrejtése - JAVÍTVA
                     deleteModal.hide();
                     showPage('home-page');
                     fetchPhotos();
