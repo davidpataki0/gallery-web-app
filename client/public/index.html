@@ -592,10 +592,10 @@
         
         // Rendezési események
         document.querySelectorAll('.photo-menu-item').forEach(item => {
-            item.addEventListener('click', (e) => {
+            item.addEventListener('click', function(e) {
                 e.preventDefault();
-                currentSort = e.target.dataset.sort;
-                currentOrder = e.target.dataset.order;
+                currentSort = this.dataset.sort;
+                currentOrder = this.dataset.order;
                 fetchPhotos();
             });
         });
@@ -625,6 +625,7 @@
                 });
                 
                 if (response.ok) {
+                    // Modal elrejtése - JAVÍTVA
                     deleteModal.hide();
                     showPage('home-page');
                     fetchPhotos();
